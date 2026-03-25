@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+results/
+data/
+*.log
+Dockerfile
+PROMPTS.md
+REQUIREMENT.md
+README.md
+LICENSE
+.agents/
