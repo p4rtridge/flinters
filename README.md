@@ -83,6 +83,16 @@ We implemented [**p4rse_tan**](third_party/p4rse_tan/README.md), a Data-Driven D
 
 ---
 
+## ✅ Verified Results
+
+The computed results for Top 10 CPA and Top 10 CTR are available in the [`results/`](results/) directory.
+
+### Verification with PostgreSQL
+
+See [results/README.md](results/README.md) for detailed PostgreSQL verification queries and comparison data.
+
+---
+
 ## 🧪 Benchmark & Verification
 
 To verify performance claims, a benchmark script is included in the engine directory.
