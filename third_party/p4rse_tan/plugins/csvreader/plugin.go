@@ -88,17 +88,19 @@ func (p *Plugin) Execute(ctx core.Context) error {
 	cols := make([][]byte, len(headerRecord))
 	wrapper := &csvRecord{header: headerMap, row: cols}
 
-	// scanErr is captured outside the stream closure so we can emit a single
-	// structured log entry after iteration ends, keeping the hot path I/O-free.
 	var scanErr error
+	var lineCount, errorCount int
+	nextErrorLog := 1
 
 	stream := func(yield func(core.Record) bool) {
 		for scanner.Scan() {
+			lineCount++
 			line := scanner.Bytes()
 
 			idx := 0
 			start := 0
 			n := len(line)
+
 			for j := 0; j < n; j++ {
 				if line[j] == ',' {
 					if idx < len(cols) {
@@ -108,8 +110,27 @@ func (p *Plugin) Execute(ctx core.Context) error {
 					idx++
 				}
 			}
+
 			if idx < len(cols) {
 				cols[idx] = line[start:n]
+			}
+
+			// If the line has fewer columns than the header, log a warning and skip it. This handles malformed rows gracefully without crashing the pipeline.
+			if idx != len(cols)-1 {
+				errorCount++
+
+				if errorCount >= nextErrorLog {
+					log.Warn(
+						"encountered malformed rows",
+						slog.Int("count", errorCount),
+						slog.Int("total_lines", lineCount),
+					)
+
+					nextErrorLog = logger.NextLogThreshold(nextErrorLog)
+				}
+
+				// Skip the malformed row (Graceful Degradation)
+				continue
 			}
 
 			// Blank missing columns to avoid stale data from the previous row.
@@ -120,6 +141,10 @@ func (p *Plugin) Execute(ctx core.Context) error {
 			if !yield(wrapper) {
 				break
 			}
+		}
+
+		if errorCount > 0 {
+			log.Warn("csv scanning completed with malformed rows", slog.Int("malformed_rows", errorCount), slog.Int("total_lines", lineCount))
 		}
 
 		// Capture scan error for post-loop reporting; no I/O inside hot path.

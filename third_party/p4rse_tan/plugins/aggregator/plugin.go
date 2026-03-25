@@ -63,6 +63,9 @@ func (p *Plugin) Execute(ctx core.Context) error {
 	}
 	stateMap := make(map[string]*groupState)
 
+	var totalParseErrors int
+	nextErrorLog := 1
+
 	for record := range stream {
 		groupValBytes, ok := record.Get(p.GroupKey)
 		if !ok {
@@ -76,15 +79,42 @@ func (p *Plugin) Execute(ctx core.Context) error {
 			stateMap[groupKey] = state
 		}
 
+		var parseErrors int
 		for i, colName := range p.SumKeys {
-			valBytes, _ := record.Get(colName)
+			valBytes, ok := record.Get(colName)
+			if !ok {
+				continue
+			}
+
 			valBytes = bytes.TrimSpace(valBytes)
 			if len(valBytes) == 0 {
 				valBytes = []byte("0")
 			}
+
 			valStr := unsafe.String(unsafe.SliceData(valBytes), len(valBytes))
-			val, _ := strconv.ParseFloat(valStr, 64)
+
+			val, err := strconv.ParseFloat(valStr, 64)
+			if err != nil {
+				parseErrors++
+				continue
+			}
+
 			state.sums[i] += val
+		}
+
+		if parseErrors > 0 {
+			totalParseErrors += parseErrors
+
+			if totalParseErrors >= nextErrorLog {
+				log.Warn(
+					"failed to parse some numeric fields",
+					slog.Int("total_errors", totalParseErrors),
+					slog.Int("row_errors", parseErrors),
+					slog.String("group", groupKey),
+				)
+
+				nextErrorLog = logger.NextLogThreshold(nextErrorLog)
+			}
 		}
 	}
 

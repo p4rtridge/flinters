@@ -63,13 +63,11 @@ To ensure consistency, all code logic must reference two primary design inspirat
 
 ---
 
-## Prompt 3: Resilience & Error-handling Strategy (Error Handling Prompt)
+## Prompt 3: Error-handling Strategy (Error Handling Prompt)
 
 > Handling 1GB of "dirty" CSV data requires more than just performance. 
 > 
 > Can you implement an **Error Aggregation** strategy? I don't want the logs to be flooded with millions of individual row errors. Instead, log a summary warning every 10,000 malformed rows and emit metrics to a separate channel.
-> 
-> Also, ensure the pipeline has **Graceful Degradation**. If a specific plugin fails, it should not crash the entire engine—instead, skip the affected data bundle and report the failure in the final summary.
 
 ---
 

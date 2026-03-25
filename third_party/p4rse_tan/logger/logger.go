@@ -59,3 +59,12 @@ func EnableDebug() *slog.Logger {
 	SetDefault(log)
 	return log
 }
+
+// NextLogThreshold calculates the next threshold for error warning logs
+// to avoid flood (exponential up to 10000, then linear steps of 10000).
+func NextLogThreshold(current int) int {
+	if current < 10000 {
+		return current * 10
+	}
+	return current + 10000
+}
