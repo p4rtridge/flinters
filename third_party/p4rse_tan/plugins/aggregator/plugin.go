@@ -40,6 +40,14 @@ func (p *Plugin) Execute(ctx core.Context) error {
 		slog.Any("sum_keys", p.SumKeys),
 	)
 
+	if p.GroupKey == "" {
+		return aggErr("group key is required", nil)
+	}
+
+	if len(p.SumKeys) == 0 {
+		return aggErr("at least one sum key is required", nil)
+	}
+
 	stream, err := core.KeyRecordStream.Get(ctx)
 	if err != nil {
 		return aggErr("record stream unavailable", err)
@@ -94,6 +102,7 @@ func (p *Plugin) Execute(ctx core.Context) error {
 
 	log.Info("aggregation done", slog.Int("groups", len(aggregates)))
 	KeyAggregates.Set(ctx, aggregates)
+
 	return nil
 }
 

@@ -51,6 +51,11 @@ Run the campaign via CLI:
 | `--input` | `data/ad_data.csv` | Path to the source CSV file. |
 | `--results` | `results/` | Directory where `top_10_ctr.csv` and `top_10_cpa.csv` will be saved. |
 
+Run the campaign via Docker:
+```bash
+docker run --name p4rse_tan -v "$(pwd)/data:/app/data" -v "$(pwd)/results:/app/results" campaign:latest --input ./data/ad_data.csv --output ./results
+```
+
 ---
 
 ## 🏗 Architecture & Design Decisions

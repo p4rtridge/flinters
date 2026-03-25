@@ -26,6 +26,7 @@ func (p *Plugin) Execute(ctx core.Context) error {
 	if err != nil {
 		return fmt.Errorf("aggregates error: %w", err)
 	}
+
 	var results []models.CampaignResult
 
 	for campaignID, groupCtx := range aggregates {

@@ -64,24 +64,27 @@ func (p *Plugin) Execute(ctx core.Context) error {
 	if err != nil {
 		return fileWriteErr(fmt.Sprintf("create %s", outPath), err)
 	}
+
 	p.f = f
 	p.reader = export.Reader
 
 	log.Debug("[DEBUG] writing export to file", slog.String("path", outPath))
 
 	eg, _ := core.KeyErrGroup.Get(ctx)
-	if eg != nil {
-		eg.Go(func() error {
-			_, err := io.Copy(f, export.Reader)
-			if err != nil {
-				return fileWriteErr("copy failed", err)
-			}
-			log.Debug("[DEBUG] export written successfully", slog.String("path", outPath))
-			return nil
-		})
-	} else {
+	if eg == nil {
 		return fileWriteErr("errgroup missing from context", nil)
 	}
+
+	eg.Go(func() error {
+		_, err := io.Copy(f, export.Reader)
+		if err != nil {
+			return fileWriteErr("copy failed", err)
+		}
+
+		log.Debug("[DEBUG] export written successfully", slog.String("path", outPath))
+
+		return nil
+	})
 
 	return nil
 }

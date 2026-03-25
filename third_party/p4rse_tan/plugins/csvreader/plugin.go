@@ -57,10 +57,12 @@ func (p *Plugin) Cleanup(ctx core.Context) error {
 func (p *Plugin) Execute(ctx core.Context) error {
 	log := logger.FromContext(ctx).With(slog.String("plugin", p.Name()))
 
-	if p.Input != nil {
-		if err := p.Input.Execute(ctx); err != nil {
-			return err
-		}
+	if p.Input == nil {
+		return csvReadErr("missing input plugin", nil)
+	}
+
+	if err := p.Input.Execute(ctx); err != nil {
+		return err
 	}
 
 	importData, err := core.KeyImport.Get(ctx)
@@ -119,6 +121,7 @@ func (p *Plugin) Execute(ctx core.Context) error {
 				break
 			}
 		}
+
 		// Capture scan error for post-loop reporting; no I/O inside hot path.
 		scanErr = scanner.Err()
 	}

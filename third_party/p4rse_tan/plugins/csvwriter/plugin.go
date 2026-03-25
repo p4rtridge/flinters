@@ -76,11 +76,17 @@ func (p *Plugin) Cleanup(ctx core.Context) error {
 func (p *Plugin) Execute(ctx core.Context) error {
 	log := logger.FromContext(ctx).With(slog.String("plugin", p.Name()))
 
-	if p.Input != nil {
-		log.Debug("[DEBUG] executing input plugin", slog.String("input", p.Input.Name()))
-		if err := p.Input.Execute(ctx); err != nil {
-			return csvErr("input execution failed", err)
-		}
+	if p.Input == nil {
+		return csvErr("missing input plugin", nil)
+	}
+
+	if p.Output == nil {
+		return csvErr("missing output plugin", nil)
+	}
+
+	log.Debug("[DEBUG] executing input plugin", slog.String("input", p.Input.Name()))
+	if err := p.Input.Execute(ctx); err != nil {
+		return csvErr("input execution failed", err)
 	}
 
 	data, err := KeyExport.Get(ctx)
@@ -100,36 +106,36 @@ func (p *Plugin) Execute(ctx core.Context) error {
 		Reader: pr,
 	})
 
-	if p.Output != nil {
-		log.Debug("[DEBUG] executing output plugin", slog.String("output", p.Output.Name()))
-		if err := p.Output.Execute(ctx); err != nil {
-			pw.Close()
-			return csvErr("output execution failed", err)
-		}
+	log.Debug("[DEBUG] executing output plugin", slog.String("output", p.Output.Name()))
+	if err := p.Output.Execute(ctx); err != nil {
+		pw.Close()
+		return csvErr("output execution failed", err)
 	}
 
 	eg, _ := core.KeyErrGroup.Get(ctx)
-	if eg != nil {
-		eg.Go(func() error {
-			defer pw.Close()
-
-			writer := csv.NewWriter(pw)
-			if err := writer.Write(data.Header); err != nil {
-				return csvErr("header write failed", err)
-			}
-
-			for row := range data.Stream {
-				if err := writer.Write(row); err != nil {
-					return csvErr("row write failed", err)
-				}
-			}
-			writer.Flush()
-			log.Debug("[DEBUG] csv stream flushed", slog.String("filename", data.Filename))
-			return nil
-		})
-	} else {
+	if eg == nil {
 		return csvErr("errgroup missing from context", nil)
 	}
+
+	eg.Go(func() error {
+		defer pw.Close()
+
+		writer := csv.NewWriter(pw)
+		if err := writer.Write(data.Header); err != nil {
+			return csvErr("header write failed", err)
+		}
+
+		for row := range data.Stream {
+			if err := writer.Write(row); err != nil {
+				return csvErr("row write failed", err)
+			}
+		}
+
+		writer.Flush()
+		log.Debug("[DEBUG] csv stream flushed", slog.String("filename", data.Filename))
+
+		return nil
+	})
 
 	return nil
 }
