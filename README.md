@@ -33,15 +33,15 @@ Processing **100,000,000 rows** (~3GB+ of generated data) on a standard laptop:
 
 3.  **Build the application:**
     ```bash
-    go build -o aggregator aggregator.go
+    go build -o campaign_cli campaign.go
     ```
 
 ##  ▶️ Usage
 
-Run the aggregator via CLI:
+Run the campaign via CLI:
 
 ```bash
-./aggregator --input data/ad_data.csv --results results/
+./campaign_cli --input data/ad_data.csv --results results/
 ```
 
 ### Flags
@@ -55,12 +55,12 @@ Run the aggregator via CLI:
 
 ## 🏗 Architecture & Design Decisions
 
-### Why Custom Streaming Engine (`p4rse_tan`)?
+### Why Custom Streaming Engine ([`p4rse_tan`](third_party/p4rse_tan/README.md))?
 The challenge requires handling large files efficiently. Standard approaches often fail at scale:
  - **Load-all-to-memory:** Causes OOM crashes on large files.
  - **Naive Line-by-Line:** Often results in "spaghetti code" when validation, aggregation, and filtering logic mix.
 
-We implemented **p4rse_tan**, a Data-Driven DAG Framework (inspired by *Iframely* and *OctoSQL*). 
+We implemented [**p4rse_tan**](third_party/p4rse_tan/README.md), a Data-Driven DAG Framework (inspired by *Iframely* and *OctoSQL*). 
 - **System:** Plugins declare *Dependencies* (Inputs) and *Provisions* (Outputs).
 - **Core:** The engine automatically resolves the execution order (Topological Sort).
 - **Memory:** Zero-allocation hot paths using `sync.Pool` and Go 1.23+ Iterators.
@@ -69,7 +69,7 @@ We implemented **p4rse_tan**, a Data-Driven DAG Framework (inspired by *Iframely
 
 ```
 .
-├── aggregator.go          # Main CLI entry point (Wires plugins together)
+├── campaign.go          # Main CLI entry point (Wires plugins together)
 ├── campaign/              # Challenge-specific logic
 │   ├── models/            # Domain models (Campaign, Stats)
 │   └── plugins/           # Business Logic Plugins
@@ -100,7 +100,7 @@ cd third_party/p4rse_tan/benchmark
 ## 📚 Libraries Used
 
 - **Standard Library:** `encoding/csv`, `bufio`, `sort`, `flag`, `context`.
-- **p4rse_tan (Internal):** Custom streaming framework for dependency injection and pipeline management.
+- [**p4rse_tan (Internal)**](third_party/p4rse_tan/README.md): Custom streaming framework for dependency injection and pipeline management.
 - **github.com/p4rtridge/p4rse_tan:** (Local replace in `go.mod`).
 
 ##  License
